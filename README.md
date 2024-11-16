@@ -43,19 +43,22 @@ Once the boxes are found, they need to be put into order. My first attempt towar
 <img src="ordering-1.png" height="330" >
 Lines between the first two points matched are shown.
 
-
+### Too Many Edge Cases
 This approach likely would have worked eventually. The problem was the many, many edge cases that needed to be accounted for. Additional code needed to be added for a turned left face, right face, top face, etc., etc., and that was assuming that all boxes were correct. One box in the wrong place could derail everything.
 
 ## Ordering the Boxes: Attempt 2
-Rather than hand code rules to order the boxes, it seemed a lot easier to use a machine learning approach. First, I tried a simple fully connected neural network, taking the centers of the top 20 predicted boxes as input. This worked somewhat, but overfitted easily and didn’t handle anomalous boxes well. What worked better was converting the boxes into a simplified image. I formed a six channel image, one for each channel for each color. Each channel was set to 0 by default and 1 for pixels that fell within a box with color matching the channel. 
 
-<img src="ordering-2.png" height="330" >
-Example Box-Only Image
-<br>
+### Boxes -> Fully Connected Network 
+Rather than hand code rules to order the boxes, it seemed a lot easier to use a machine learning approach. First, I tried a simple fully connected neural network, taking the centers of the top 20 predicted boxes as input. This worked somewhat, but overfitted easily and didn’t handle anomalous boxes well. 
+
+### Simplified Image -> CNN
+What worked better was converting the boxes into a simplified image. I formed a six channel image, one for each channel for each color. Each channel was set to 0 by default and 1 for pixels that fell within a box with color matching the channel. 
+
+<img src="ordering-2.png" height="200" >
 
 This simplified image was then passed into a simple CNN with 18 classification heads, one for each piece on the front two faces. To create the training data I used the labels for simulated images and added or removed a box or two at random. For loss I simply used logistic cross entropy summed over every output.
-<br>
-<img src="ordering-3.png" height="330" >
+
+<img src="ordering-3.png" height="500" >
 
 This method of ordering boxes works fairly well, with only minor mistakes, such as missing the red piece above.
 
