@@ -1,4 +1,7 @@
 # Cube Vision
+![](CubeVisionDemo.gif)
+
+[Full Demo Video](CubeVisionDemo.mp4?raw=1)
 
 ## Goal
 We all make mistakes. But when it comes to solving a Rubik’s cube very quickly, even the smallest mistakes add up very quickly. The problem is that reconstructing a solution, even with a video, is challenging and time consuming. As a result, common mistakes are identified slowly if at all. The goal of this project is to change that.
