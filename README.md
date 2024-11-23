@@ -6,27 +6,31 @@
 ## Goal
 We all make mistakes. But when it comes to solving a Rubik’s cube very quickly, even the smallest mistakes add up very quickly. The problem is that reconstructing a solution, even with a video, is challenging and time consuming. As a result, common mistakes are identified slowly if at all. The goal of this project is to change that.
 
-By tracking the moves made, it is possible to identify inefficient move algorithms, track how long different stages of the solve take, and reveal common mistakes. Software for such an application already exists, though these apps rely on “Smartcubes” - cubes with inbuilt computers to record moves. These cubes are expensive and heavy, making them impractical to practice with. This project aims to instead track moves using computer vision.
+By tracking the moves made, it is possible to identify inefficient move algorithms, track how long different stages of the solve take, and reveal common mistakes. Software for such an application already exists, though these apps rely on “Smartcubes” - cubes with inbuilt computers to record moves. These cubes are expensive and heavy, making them impractical to practice with. 
+
+With this project I aim to track moves using only computer vision.  I am building a mobile app that will give a scramble (an initial starting point for solving the cube), and then it will record a video of the solve in slow motion.  The app will then analyze the video frame by frame and determine each move that the cuber makes in a solve. 
 
 ## Object Detection
-On the first attempt, object detection served two purposes. First, a single class object detection model is used to locate the cube in the image. The image is then cropped to that box; the resulting image is passed into a second object detection model which locates the pieces and identifies them with their respective colors.
+I focused on object detection on the first attempt, and used it for two purposes. First, a [single class object detection model](https://github.com/DamianOliver/cube-ssd/blob/main/training_configs/cube_crop_retinanet.yaml) is used to locate the cube in the image. The image is then cropped to that box; the resulting image is passed into a [second object detection model](https://github.com/DamianOliver/cube-ssd/blob/main/training_configs/cube_retinanet.yaml) which locates the pieces and identifies them with their respective colors.  
 
 <img src="object-detection-1.png" height="500"> <img src="object-detection-2.png" height="500">
 
-These boxes will then be passed into a simple heuristics algorithm which will calculate which boxes correspond to which pieces. The object detection model used is Retinanet with a mobilenet backbone to achieve real time inference speeds.
+These boxes are then be passed into a simple heuristics algorithm that calculates which boxes correspond to which pieces. 
+
+I use a Retinanet with a mobilenet backbone to achieve real time inference speeds, from the [tensorflow/models](https://github.com/DamianOliver/cube-tf-models) project.
 
 ## Data
-Object detection models require vast quantities of data to train, ideally in the tens if not hundreds of thousands of annotated images. Sadly no university or tech giant has gotten around to making a large annotated database of Rubik’s cube images, and so I’m on my own. Rather than spending the next two years dragging boxes onto images of cubes, I decided to create simulated data using Unity.
+Object detection models require vast quantities of data to train, ideally in the tens if not hundreds of thousands of annotated images. Sadly no university or tech giant has gotten around to making a large annotated database of Rubik’s cube images, and so I’m on my own. Rather than spending the next two years dragging boxes onto images of cubes, I decided to [create simulated data using Unity](https://github.com/DamianOliver/cube-unity/tree/main).
 
 <img src="data-1.png" height="330" width="330"> <img src="data-2.png" height="330" width="330"> <img src="data-3.png" height="330" width="330">
 <img src="data-4.png" height="330" width="330"> <img src="data-5.png" height="330" width="330"> <img src="data-6.png" height="330" width="330">
 
-1. Instantiate scene and cube object
-1. Randomize colors of pieces of cube
+1. [Instantiate scene and cube object](https://github.com/DamianOliver/cube-unity/blob/main/Assets/Scripts/SetUp.cs)
+1. [Randomize colors of pieces of cube](https://github.com/DamianOliver/cube-unity/blob/main/Assets/Scripts/GetState.cs)
 1. Rotate one side of the cube, move the entire cube, rotate the entire cube
 1. Apply a random background image from the coco dataset
-1. Match hands to position of cube, randomize angles of joints in hand
-1. Randomize lighting location and color, shift RGB colors of pieces
+1. [Match hands to position of cube, randomize angles of joints in hand](https://github.com/DamianOliver/cube-unity/blob/main/Assets/Scripts/PrintHand.cs)
+1. [Randomize lighting location and color, shift RGB colors of pieces](https://github.com/DamianOliver/cube-unity/blob/main/Assets/Scripts/WeightColors.cs)
 
 >[!Note]
 > As this sample demonstrates, I am very good at Unity and so had no problems implementing this.
@@ -38,10 +42,10 @@ Once an image is generated and saved, a corresponding label file is also saved w
 ### Determining Visibility
 <img src="data-8.png" height="330"> <img src="data-9.png" height="330" >
 
-Only pieces which are actually visible should be given boxes. To determine visibility, a series of rays are cast from the camera to individual pieces. If all are blocked then the box is not saved. If a ray does make contact, the smallest box that fully covers the cube is recorded as well as the color of the sticker.
+Only pieces which are actually visible should be given boxes. To determine visibility, a series of [rays are cast from the camera to individual pieces](https://github.com/DamianOliver/cube-unity/blob/main/Assets/Scripts/CheckVisible.cs). If all are blocked then the box is not saved. If a ray does make contact, the smallest box that fully covers the cube is recorded as well as the color of the sticker.
 
 ## Ordering the Boxes
-Once the boxes are found, they need to be put into order. My first attempt toward solving this was to use a series of heuristics. Starting the highest box for instance, I would calculate a line to the next highest box. I would then calculate the distance of each box from this line. If any were close enough, these three pieces would be considered a row. I would then go to the next highest box and repeat the process. This worked…? Kind of?
+Once the boxes are found, they need to be put into order. My first attempt toward solving this was to [use a series of heuristics.](https://github.com/DamianOliver/cube-models/blob/main/interpret.py#L145) Starting the highest box for instance, I would calculate a line to the next highest box. I would then calculate the distance of each box from this line. If any were close enough, these three pieces would be considered a row. I would then go to the next highest box and repeat the process. This worked…? Kind of?
 
 <img src="ordering-1.png" height="330" >
 Lines between the first two points matched are shown.
@@ -59,7 +63,7 @@ What worked better was converting the boxes into a simplified image. I formed a 
 
 <img src="ordering-2.png" height="200" >
 
-This simplified image was then passed into a simple CNN with 18 classification heads, one for each piece on the front two faces. To create the training data I used the labels for simulated images and added or removed a box or two at random. For loss I simply used logistic cross entropy summed over every output.
+This simplified image was then passed into a [simple CNN with 18 classification heads](https://github.com/DamianOliver/cube-models/blob/main/deep_interpret.py), one for each piece on the front two faces. To create the training data I used the labels for simulated images and added or removed a box or two at random. For loss I simply used logistic cross entropy summed over every output.
 
 <img src="ordering-3.png" height="500" >
 
