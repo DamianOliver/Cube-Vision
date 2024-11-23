@@ -91,4 +91,4 @@ States that represent the same position but were arrived at by different moves a
 
 I made some additional optimizations after much testing, such as not distinguishing between red and orange when counting the number of matching stickers, since the vision model commonly confuses these two.  Another optimization was to expand the search to a higher depth when no good states are found, which also yielded minor improvements in accuracy.
 
-[Full Demo Video](CubeVisionDemo.mp4?raw=1)
+[Full Demo Video](CubeVisionDemo.mp4)
