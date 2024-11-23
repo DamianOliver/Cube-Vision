@@ -75,7 +75,9 @@ Thus far my process only accounts for single frames, and my goal is to identify 
 
 The vision model is correct more often than not, but it is still prone to many mistakes, meaning that any search algorithm must be robust to inaccurate data. Further, as the vision model only accounts for two sides of the cube (and at times only one side is visible), some moves may not visibly change the state of the cube at all.  Even without mistakes, it would still be necessary to discover a move using data two or more frames away.
 
-The search algorithm tracks a set of n possible move sequences. On each frame it expands these sequences with k possible moves that could have been discovered in the frame. There are 20 possible cube moves.  With *n = 10* and *k = 2*, there are $n * 20^k = 4000$ new states to consider on each frame.
+The [search algorithm](https://github.com/DamianOliver/cube-models/blob/main/search.c) tracks a set of n possible move sequences. On each frame it expands these sequences with k possible moves that could have been discovered in the frame. There are 20 possible cube moves.  With *n = 10* and *k = 2*, there are $n * 20^k = 4000$ new states to consider on each frame.
+
+<img src="search.png" width="400">
 
 The algorithm ranks candidate states based on several criteria:
 * **Matches** - the number of stickers in the state that match the stickers returned by the vision algorithm. 
