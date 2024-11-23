@@ -1,8 +1,6 @@
 # Cube Vision
 ![](CubeVisionDemo.gif)
 
-[Full Demo Video](CubeVisionDemo.mp4?raw=1)
-
 ## Goal
 We all make mistakes. But when it comes to solving a Rubik’s cube very quickly, even the smallest mistakes add up very quickly. The problem is that reconstructing a solution, even with a video, is challenging and time consuming. As a result, common mistakes are identified slowly if at all. The goal of this project is to change that.
 
@@ -73,12 +71,22 @@ This method of ordering boxes works fairly well, with only minor mistakes, such 
 While this system of reading the cube, using a CNN to interpret the results of an object detection network was passable, it really seemed overcomplicated. Bounding boxes are a great way for humans to understand where things are in an image, but for a neural network a multi dimensional feature vector gets the idea across a lot better. I decided to streamline the process, removing the retinanet heads and directly connecting my mobilenet backbone to the 18 convolutional classification heads (I did test other output mechanisms but having a lot of heads worked best for whatever reason). I decided to continue using the first object detection model, cropping the image to the cube, as this did significantly improve accuracy. This simplified inference pipeline improved both accuracy and inference time.
 
 ## Search Algorithm
-A glaring flaw with the approach thus far is that it only accounts for single frames, while identifying moves clearly requires more than one frame. While a computer vision model with video input would likely perform better, such a model would require greater resources to train and would make simulating data much more challenging. Instead, a search algorithm is used to find the most plausible set of moves performed over a sequence of frames based on the series of states given by the vision model.
+Thus far my process only accounts for single frames, and my goal is to identify moves solving the cube over thousands of frames of a slow-motion video. While a computer vision model with video input would likely perform better, such a model would require greater resources to train and would make simulating data much more challenging. Instead, I used a search algorithm over a sequence of predicted cube states to find the most plausible set of moves.
 
-While the vision model is correct more often than not, it is still prone to many mistakes, meaning that any search algorithm must be robust to inaccurate data. Further, as the vision model only accounts for two sides of the cube (and at times only one side is visible), some moves may not visibly change the state of the cube at all, meaning that even when not considering the impact of mistakes, it may still be necessary to find a state two or more moves away.
+The vision model is correct more often than not, but it is still prone to many mistakes, meaning that any search algorithm must be robust to inaccurate data. Further, as the vision model only accounts for two sides of the cube (and at times only one side is visible), some moves may not visibly change the state of the cube at all.  Even without mistakes, it would still be necessary to discover a move using data two or more frames away.
 
-The algorithm stores a set of n possible move sequences. On each frame each sequence is expanded by k moves (2 generally works well). For n = 10 and k = 2 this results in 10 * 20 possible moves^2 = 4000 states to consider on each frame. The algorithm ranks each state based on several criteria. First, the number of stickers in the state that match the stickers returned by the vision algorithm. Each state is associated with an age, the number of frames since that state was first reached. As turning at one move per frame is not possible (probably), a penalty is applied to any state which is derived from a previous state less than 5 frames old. This is important as it prevents the search algorithm from following erroneous results from the vision model, forcing it instead to find states which are generally correct for several frames. A small additional penalty is applied to states which are reached at a higher depth. To further increase robustness, the score of each state is defined as the average of its score and its parent’s score. This further reduces the likelihood that an incorrect series of moves that eventually leads to a correct looking position (from the sides visible) will be accepted.
+The search algorithm tracks a set of n possible move sequences. On each frame it expands these sequences with k possible moves that could have been discovered in the frame. There are 20 possible cube moves.  With *n = 10* and *k = 2*, there are $n * 20^k = 4000$ new states to consider on each frame.
+
+The algorithm ranks candidate states based on several criteria:
+* **Matches** - the number of stickers in the state that match the stickers returned by the vision algorithm. 
+* **Age** - the number of frames that have passed since the last move.
+* **Depth** - level in the search tree (1 to k).
+* **Legacy** - parent state’s score.
+
+Matches are the primary variable in the score.  Then, using Age, a penalty is applied to any state which is derived from a previous state less than 5 frames old, as turning at one move per frame is not possible (probably). This is important as it prevents the search algorithm from following erroneous results from the vision model, forcing it instead to find states which are generally correct for several frames. A small additional penalty is applied to states which are reached at a higher Depth.   To further increase robustness, the score of each state is defined as the average of its score and its parent’s score (i.e. Legacy). This further reduces the likelihood that an incorrect series of moves that eventually leads to a correct looking position (from the sides visible) will be accepted.
 
 States that represent the same position but were arrived at by different moves are removed. Once all states have been scored, all but the top n are discarded.
 
-Additional optimizations, such as not distinguishing between red and orange when counting the number of matching stickers (as the vision model commonly confuses these two), or expanding the search to a higher depth when no good states are found also yield improvements to accuracy.
+I made some additional optimizations after much testing, such as not distinguishing between red and orange when counting the number of matching stickers, since the vision model commonly confuses these two.  Another optimization was to expand the search to a higher depth when no good states are found, which also yielded minor improvements in accuracy.
+
+[Full Demo Video](CubeVisionDemo.mp4?raw=1)
