@@ -38,9 +38,9 @@ Object detection models require vast quantities of data to train, ideally in the
 Once an image is generated and saved, a corresponding label file is also saved with the locations of all boxes in the image.
 
 ### Determining Visibility
-<img src="data-8.png" height="330"> <img src="data-9.png" height="330" >
-
 Only pieces which are actually visible should be given boxes. To determine visibility, a series of [rays are cast from the camera to individual pieces](https://github.com/DamianOliver/cube-unity/blob/main/Assets/Scripts/CheckVisible.cs). If all are blocked then the box is not saved. If a ray does make contact, the smallest box that fully covers the cube is recorded as well as the color of the sticker.
+
+<img src="data-8.png" height="300"> <img src="data-9.png" height="300" >
 
 ## Ordering the Boxes
 Once the boxes are found, they need to be put into order. My first attempt toward solving this was to [use a series of heuristics.](https://github.com/DamianOliver/cube-models/blob/main/interpret.py#L145) Starting the highest box for instance, I would calculate a line to the next highest box. I would then calculate the distance of each box from this line. If any were close enough, these three pieces would be considered a row. I would then go to the next highest box and repeat the process. This worked…? Kind of?
